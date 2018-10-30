@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(500);
-        mLocationRequest.setFastestInterval(1000);
+        mLocationRequest.setFastestInterval(250);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
@@ -395,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 }
 
             }
-        }, 0, 300, TimeUnit.MILLISECONDS);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     float getRecentSpeed() {
