@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:stretchColumns="*"
+    android:shrinkColumns="*">
+
+    <TableRow android:id="@+id/tableRow0"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp">
+
+        <TextView
+            android:id="@+id/tvAssistiveMode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center_vertical|center_horizontal"
+
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:text="Assistive Mode:" />
+
+        <ToggleButton
+            android:id="@+id/btAssistiveMode"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_column="1"
+            android:layout_gravity="center_horizontal|center"
+            android:layout_weight="1"
+            android:text="ToggleButton" />
+
+
+    </TableRow>
+
+    <TableRow android:id="@+id/tableRow1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/tvConnectedDevice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center_vertical|center_horizontal"
+
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:text="Connected Device:" />
+
+        <TextView
+            android:id="@+id/tvConnectedDeviceName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="center_vertical|center_horizontal"
+
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:text="None yet!" />
+
+
+    </TableRow>
+
+    <TableRow android:id="@+id/tableRow2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:gravity="center_horizontal">
+
+        <ImageView
+            android:id="@+id/ivLuggage"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:adjustViewBounds="true"
+            android:scaleType="centerCrop"
+            android:src="@drawable/luggage_marvel" />
+
+        <LinearLayout
+            android:id="@+id/llMetrics"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvMetrics"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:layout_gravity="center"
+                android:text="Metrics"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/tvSpeedHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center"
+                android:gravity="center"
+                android:text="Current Speed:" />
+
+            <TextView
+                android:id="@+id/tvSpeedData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center"
+                android:adjustViewBounds="true"
+                android:gravity="center_vertical|center"
+                android:text="0 MPH" />
+
+            <TextView
+                android:id="@+id/tvAvgSpeedHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center"
+                android:gravity="center_vertical|center"
+                android:text="Average Speed:" />
+
+            <TextView
+                android:id="@+id/tvAvgSpeedData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center"
+                android:adjustViewBounds="true"
+                android:gravity="center_vertical|center"
+                android:text="0 MPH" />
+        </LinearLayout>
+
+
+    </TableRow>
+
+    <TableRow android:id="@+id/tableRow3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp">
+
+        <TextView
+            android:id="@+id/tvStairs"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_column="0"
+            android:layout_gravity="center_horizontal|center"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:text="Stairs" />
+
+        <TextView
+            android:id="@+id/tvEscalator"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_column="1"
+            android:layout_gravity="center_horizontal|center"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:text="Escalator" />
+
+        <TextView
+            android:id="@+id/tvSidewalk"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_column="2"
+            android:layout_gravity="center_horizontal|center"
+            android:layout_weight="1"
+            android:gravity="center_vertical|center_horizontal"
+            android:text="Mov. Sidewalk" />
+
+
+    </TableRow>
+
+    <TableRow android:id="@+id/tableRow4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp">
+
+        <ToggleButton
+            android:id="@+id/btStairs"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_column="0"
+            android:layout_gravity="center_horizontal"
+            android:layout_weight="1"
+            android:text="ToggleButton" />
+
+        <ToggleButton
+            android:id="@+id/btEscalator"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_column="1"
+            android:layout_gravity="center_horizontal"
+            android:layout_weight="1"
+            android:text="ToggleButton" />
+
+        <ToggleButton
+            android:id="@+id/btSidewalk"
+            android:layout_width="0dp"
+
+            android:layout_height="match_parent"
+            android:layout_column="2"
+            android:layout_gravity="center_horizontal"
+            android:layout_weight="1"
+            android:text="ToggleButton" />
+        <!--  android:layout_columnWeight="1"
+          android:layout_rowWeight="1" -->
+
+
+    </TableRow>
+
+    <TableRow android:id="@+id/tableRow5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp">
+
+        <Button
+            android:id="@+id/btSettings"
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:layout_gravity="center_horizontal"
+
+            android:layout_weight="1"
+            android:text="Settings" />
+    </TableRow>
+
+
+
+
+
+
+</TableLayout>
