@@ -283,6 +283,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             lastLoc = new Location("");
             lastLoc.setLatitude(GPSLoc.getLatitude());
             lastLoc.setLongitude(GPSLoc.getLongitude());
+
+            newLoc = new Location("");
+            newLoc.setLatitude(GPSLoc.getLatitude());
+            newLoc.setLongitude(GPSLoc.getLongitude());
         }
 
         Log.d("NOTE", "onCreate: " + lastLoc.getLatitude() + " " + lastLoc.getLongitude());
@@ -323,15 +327,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 Log.d("TEMP", "Location: " + location.getLatitude() + " " + location.getLongitude());
             }
 
+            Log.d("HERE", "onLocationResult: " + newLoc);
             // case where app is just launching
-            if (newLoc == null) {
-                newLoc = location;
-            }
 
-            else {
-                lastLoc = newLoc;
-                newLoc = location;
-            }
+            lastLoc = newLoc;
+            newLoc = location;
         }
     };
 
