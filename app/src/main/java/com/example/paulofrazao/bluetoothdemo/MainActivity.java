@@ -404,6 +404,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         Location.distanceBetween(lastLoc.getLatitude(), lastLoc.getLongitude(), this.newLoc.getLatitude(), this.newLoc.getLongitude(), res);
         Log.d("DIST", "getRecentSpeed: " + res[0]);
 
+
         // converts meters / second to miles / hour
         float speedMetersPerHour = res[0] * SECONDS_IN_HOUR;
         float speedMilesPerHour = speedMetersPerHour * (1/METERS_IN_MILE);
