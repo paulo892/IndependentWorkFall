@@ -103,6 +103,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     private Location lastLoc;
     private Location newLoc;
 
+    private float curSpeed;
+
+    private ScheduledExecutorService executorService;
+    private ScheduledExecutorService executorService2;
+
+    private boolean onMovingSidewalk = false;
+
 
     // bluetooth connection elements
     private BluetoothAdapter mBluetoothAdapter;
@@ -167,12 +174,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         btSidewalk.setHeight((int)(height*0.05));
         btSettings.setHeight((int)(height*0.075));
 
-        // lists the connected device
-       // mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-     //   Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+
         /* Here, we check the paired devices against the MAC address of the Arduino to display
            the device name in the corresponding TextView. In the final product, should have way to
            differentiate luggage from other devices. */
+
+        /*
+        // handles the bluetooth setup
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+
+        // if bluetooth is not enabled, enables it
+        if(!mBluetoothAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, 3); }
+
+        // checks to make sure device is found
+        BluetoothDevice dev = (BluetoothDevice) devices.toArray()[0];
+        Log.d("tag", "onCreate: " + dev.getName());
+
+        // establishes connection
+        BluetoothConnection bt = new BluetoothConnection(dev);
+        if (bt == null) Log.d("TAG", "onCreate: NTUS"); */
 
 
         // sets button listeners
@@ -180,7 +203,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             @Override
             public void onClick(View v) {
                 // begins the thread to commence information transferring process
-                // bt.start();
+                /*if (btAssistiveMode.isChecked()) bt.start();
+                else bt.cancel();*/
 
                 if (btAssistiveMode.isChecked())
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
@@ -195,10 +219,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 if (btEscalator.isChecked()) btEscalator.setChecked(false);
                 if (btSidewalk.isChecked()) btSidewalk.setChecked(false);
 
-                if (btStairs.isChecked())
+                if (btStairs.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for stairs!", Toast.LENGTH_SHORT).show();
-                else
+                    //bt.cancel();
+                }
+                else {
                     Toast.makeText(getApplicationContext(), "Not ready for stairs :(", Toast.LENGTH_SHORT).show();
+                    // bt.start();
+                }
+
+                /*if (!btS.isChecked()) bt.start();
+                else bt.cancel();*/
             }
         });
 
@@ -208,10 +239,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 if (btStairs.isChecked()) btStairs.setChecked(false);
                 if (btSidewalk.isChecked()) btSidewalk.setChecked(false);
 
-                if (btEscalator.isChecked())
+                if (btEscalator.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for an escalator!", Toast.LENGTH_SHORT).show();
-                else
+                    //bt.cancel();
+                }
+                else {
                     Toast.makeText(getApplicationContext(), "Not ready for an escalator :(", Toast.LENGTH_SHORT).show();
+                    // bt.start();
+                }
             }
         });
 
@@ -221,10 +256,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 if (btStairs.isChecked()) btStairs.setChecked(false);
                 if (btEscalator.isChecked()) btEscalator.setChecked(false);
 
-                if (btSidewalk.isChecked())
+                if (btSidewalk.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for a moving sidewalk!", Toast.LENGTH_SHORT).show();
-                else
+                    onMovingSidewalk = true;
+                }
+                else {
                     Toast.makeText(getApplicationContext(), "Not ready for a moving sidewalk :(", Toast.LENGTH_SHORT).show();
+                    onMovingSidewalk = false;
+                }
             }
         });
 
@@ -289,27 +328,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             newLoc.setLongitude(GPSLoc.getLongitude());
         }
 
-        Log.d("NOTE", "onCreate: " + lastLoc.getLatitude() + " " + lastLoc.getLongitude());
-
-
-        /*
-        // handles the bluetooth setup
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
-
-        // if bluetooth is not enabled, enables it
-        if(!mBluetoothAdapter.isEnabled()) {
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableIntent, 3); }
-
-        // checks to make sure device is found
-        BluetoothDevice dev = (BluetoothDevice) devices.toArray()[0];
-        Log.d("tag", "onCreate: " + dev.getName());
-
-        // establishes connection
-        BluetoothConnection bt = new BluetoothConnection(dev);
-        if (bt == null) Log.d("TAG", "onCreate: NTUS"); */
-
         // begins the speed calculation
         beginSpeedCalculation();
     }
@@ -357,7 +375,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     }
 
     private void beginSpeedCalculation() {
-        final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService = Executors.newSingleThreadScheduledExecutor();
      //   final Random rnd = new Random();
         executorService.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -373,7 +391,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     roundedSpeed /= 1000;
                     final float tempRoundedSpeed = roundedSpeed;
 
-                    runningSum += speed;
+                    // assumes that a moving sidewalk moves at 1.4 mph!
+                    if (onMovingSidewalk) {
+                        curSpeed = Math.max(tempRoundedSpeed - 1.4f, 0f);
+                        runningSum += speed - 1.4;
+                    }
+                    else {
+                        curSpeed = tempRoundedSpeed;
+                        runningSum += speed;
+                    }
+
                     runningCount++;
 
                     float avg = ((float) (int) (runningSum / runningCount * 1000)) / 1000;
@@ -491,13 +518,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 Log.d("tag", "onCreate: couldn't in");
             }
 
-            // tests writing words
-            String[] words = {"hi", "there", "my", "dude"};
-            for (int i = 0; i < words.length; i++) {
-                this.write(words[i].getBytes());
-            }
+            executorService2 = Executors.newSingleThreadScheduledExecutor();
+            //   final Random rnd = new Random();
+            executorService2.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(curSpeed).array());
+                    } catch (IOException e) {
+                        Log.d("oh no", "run: oh no!" + e);
+                    }
+                }
+            },  0, 500, TimeUnit.MILLISECONDS);
         }
-
+/*
         public void write(byte[] buffer) {
         //    while (true) {
                 try {
@@ -513,12 +547,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     Log.d("TAG", "write: OHNO");
                 }
         //    }
-        }
+        } */
 
         // stops the thread
         public void cancel() {
             try {
                 mmSocket.close();
+                executorService2.shutdown();
             } catch (IOException e) {
                 e.printStackTrace();
             }
