@@ -110,6 +110,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
     private boolean onMovingSidewalk = false;
 
+    private final int POLLING_FREQ_MILLISECONDS = 1000;
+
 
     // bluetooth connection elements
     private BluetoothAdapter mBluetoothAdapter;
@@ -194,8 +196,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         Log.d("tag", "onCreate: " + dev.getName());
 
         // establishes connection
-        BluetoothConnection bt = new BluetoothConnection(dev);
-        if (bt == null) Log.d("TAG", "onCreate: NTUS"); */
+        BluetoothConnection bt = new BluetoothConnection(dev);*/
 
 
         // sets button listeners
@@ -288,8 +289,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         mFusedProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(500);
-        mLocationRequest.setFastestInterval(250);
+        mLocationRequest.setInterval(POLLING_FREQ_MILLISECONDS);
+        mLocationRequest.setFastestInterval(POLLING_FREQ_MILLISECONDS);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         try {
@@ -345,9 +346,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 Log.d("TEMP", "Location: " + location.getLatitude() + " " + location.getLongitude());
             }
 
-            Log.d("HERE", "onLocationResult: " + newLoc);
-            // case where app is just launching
-
             lastLoc = newLoc;
             newLoc = location;
         }
@@ -366,7 +364,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
     @Override
     public void onLocationChanged(Location loc) {
-     //   Log.d("TAG", "onLocationChanged: " + loc);
+     Log.d("TAG", "onLocationChanged: " + loc);
     }
 
     @Override
@@ -384,6 +382,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
               //      float nxt = rnd.nextFloat();
                     // float speed = 20 * nxt;
                     float speed = getRecentSpeed();
+                    Log.d("SPEED", "established: " + speed);
+                    Log.d("SPEED", "new: " + (newLoc.getSpeed() * SECONDS_IN_HOUR / METERS_IN_MILE));
                     float roundedSpeed = speed * 1000;
 
                     // float roundedSpeed = speed * 1000;
@@ -394,11 +394,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     // assumes that a moving sidewalk moves at 1.4 mph!
                     if (onMovingSidewalk) {
                         curSpeed = Math.max(tempRoundedSpeed - 1.4f, 0f);
-                        runningSum += speed - 1.4;
+                        runningSum += curSpeed - 1.4;
+                        Log.d("MOVS", "speed: " + curSpeed);
                     }
                     else {
                         curSpeed = tempRoundedSpeed;
-                        runningSum += speed;
+                        runningSum += curSpeed;
                     }
 
                     runningCount++;
@@ -422,21 +423,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 }
 
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, POLLING_FREQ_MILLISECONDS, TimeUnit.MILLISECONDS);
     }
 
     float getRecentSpeed() {
         // calculates distance b/w new point and old point
         float[] res = new float[1];
         Location.distanceBetween(lastLoc.getLatitude(), lastLoc.getLongitude(), this.newLoc.getLatitude(), this.newLoc.getLongitude(), res);
-        Log.d("DIST", "getRecentSpeed: " + res[0]);
 
 
         // converts meters / second to miles / hour
         float speedMetersPerHour = res[0] * SECONDS_IN_HOUR;
         float speedMilesPerHour = speedMetersPerHour * (1/METERS_IN_MILE);
-
-        Log.d("BAM", "Recent Speed: " + speedMilesPerHour);
 
         return speedMilesPerHour;
 
@@ -482,7 +480,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
-                Log.d("TAG", "BluetoothConnection: kirsten");
+                Log.d("TAG", "BluetoothConnection: ");
                 e.printStackTrace();
             }
 
@@ -492,7 +490,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         public void run() {
             // cancels discovery to save resources
             mBluetoothAdapter.cancelDiscovery();
-            Log.d("TAG", "run: HEYO");
 
             try {
                 // tries to connect to the Arduino
@@ -501,7 +498,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 Log.d("ERR", "run: Socket couldn't connect");
             }
 
-            Log.d("TAG", "run: " + mmSocket.isConnected());
             btSocket = mmSocket;
 
             // establishes output stream
@@ -529,7 +525,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                         Log.d("oh no", "run: oh no!" + e);
                     }
                 }
-            },  0, 500, TimeUnit.MILLISECONDS);
+            },  0, POLLING_FREQ_MILLISECONDS, TimeUnit.MILLISECONDS);
         }
 /*
         public void write(byte[] buffer) {
