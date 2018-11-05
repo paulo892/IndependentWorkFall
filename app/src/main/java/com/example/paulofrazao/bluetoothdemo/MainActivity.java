@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -117,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     private final int POLLING_FREQ_MILLISECONDS = 1000;
 
     private GoogleApiClient mGoogleApiClient;
+
+    private CountDownLatch latch;
 
 
     // bluetooth connection elements
@@ -214,10 +217,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 if (btAssistiveMode.isChecked()) bt.start();
                 else bt.cancel();
 
-                if (btAssistiveMode.isChecked())
+                if (btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
-                else
+                }
+                else {
                     Toast.makeText(getApplicationContext(), "Assistive Mode is OFF!", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-3f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop reading input");
+                    }
+                }
             }
         });
 
@@ -230,12 +240,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     onMovingSidewalk = false;
                 }
 
-                if (btStairs.isChecked()) {
+                if (btStairs.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for stairs!", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-1f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop bag");
+                    }
                     bt.cancel();
                 }
-                else {
+                else if (!btStairs.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Not ready for stairs :(", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-2f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't start bag");
+                    }
                     bt.start();
                 }
             }
@@ -250,12 +270,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     onMovingSidewalk = false;
                 }
 
-                if (btEscalator.isChecked()) {
+                if (btEscalator.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for an escalator!", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-1f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop bag");
+                    }
                     bt.cancel();
                 }
-                else {
+                else if (!btEscalator.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Not ready for an escalator :(", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-2f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't start bag");
+                    }
                     bt.start();
                 }
             }
@@ -275,6 +305,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     Toast.makeText(getApplicationContext(), "Not ready for a moving sidewalk :(", Toast.LENGTH_SHORT).show();
                     onMovingSidewalk = false;
                 }
+
             }
         });
 
@@ -282,12 +313,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             @Override
             public void onClick(View v) {
                 Toast.makeText(getApplicationContext(), "Will display settings!", Toast.LENGTH_SHORT).show();
-
-                try {
-                    out.write(ByteBuffer.allocate(4).putFloat(5.1f).array());
-                } catch (IOException e) {
-                    Log.d("oh no", "run: oh no!" + e);
-                }
             }
 
         });
@@ -435,9 +460,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     @Override
     public void onLocationChanged(Location loc) {
      Log.d("TAG", "onLocationChanged: " + loc + loc.getAccuracy());
-     lastLoc = newLoc;
-     newLoc = loc;
 
+     if (lastLoc == null && newLoc == null) {lastLoc = loc; newLoc = loc;}
+     else {lastLoc = newLoc; newLoc = loc;}
     }
 
     @Override
@@ -455,8 +480,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
               //      float nxt = rnd.nextFloat();
                     // float speed = 20 * nxt;
                     float speed = getRecentSpeed();
-                    Log.d("SPEED", "established: " + speed);
-                    Log.d("SPEED", "new: " + (newLoc.getSpeed() * SECONDS_IN_HOUR / METERS_IN_MILE));
                     float roundedSpeed = speed * 1000;
 
                     // float roundedSpeed = speed * 1000;
@@ -467,7 +490,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     // assumes that a moving sidewalk moves at 1.4 mph!
                     if (onMovingSidewalk) {
                         curSpeed = Math.max(tempRoundedSpeed - 1.4f, 0f);
-                        runningSum += curSpeed - 1.4;
+                        runningSum += curSpeed;
                         Log.d("MOVS", "speed: " + curSpeed);
                     }
                     else {
@@ -558,6 +581,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             }
 
             mmSocket = tmp;
+            Log.d("SOCK", "BluetoothConnection: " + mmSocket);
         }
 
         public void run() {
@@ -575,7 +599,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
             // establishes output stream
             try {
-                out = btSocket.getOutputStream();}
+                out = mmSocket.getOutputStream();
+                try {
+                      /*  latch = new CountDownLatch(1);
+                        latch.await(); */
+                    out.write(ByteBuffer.allocate(4).putFloat(-4f).array());
+                } catch (Exception e) {
+                    Log.d("ERR", "run: didn't start reading input");
+                }
+             //   latch.countDown();
+            }
             catch (Exception e) {
                 Log.d("tag", "onCreate: couldn't out");
             }
@@ -588,17 +621,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             }
 
             executorService2 = Executors.newSingleThreadScheduledExecutor();
-            //   final Random rnd = new Random();
             executorService2.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     try {
+                        Log.d("SPD", "run: " + curSpeed);
                         out.write(ByteBuffer.allocate(4).putFloat(curSpeed).array());
                     } catch (IOException e) {
                         Log.d("oh no", "run: oh no!" + e);
                     }
                 }
             },  0, POLLING_FREQ_MILLISECONDS, TimeUnit.MILLISECONDS);
+            Log.d("CUR", "run: ");
         }
 /*
         public void write(byte[] buffer) {
@@ -623,6 +657,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             try {
                 mmSocket.close();
                 if (executorService2 != null) executorService2.shutdownNow();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
