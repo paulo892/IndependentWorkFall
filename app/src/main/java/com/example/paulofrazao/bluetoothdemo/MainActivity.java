@@ -35,6 +35,8 @@ import android.widget.ToggleButton;
 
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -47,6 +49,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +57,7 @@ import java.io.OutputStream;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.Security;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -111,6 +115,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     private boolean onMovingSidewalk = false;
 
     private final int POLLING_FREQ_MILLISECONDS = 1000;
+
+    private GoogleApiClient mGoogleApiClient;
 
 
     // bluetooth connection elements
@@ -181,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
            the device name in the corresponding TextView. In the final product, should have way to
            differentiate luggage from other devices. */
 
-        /*
+
         // handles the bluetooth setup
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
@@ -196,7 +202,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         Log.d("tag", "onCreate: " + dev.getName());
 
         // establishes connection
-        BluetoothConnection bt = new BluetoothConnection(dev);*/
+        final BluetoothConnection bt = new BluetoothConnection(dev);
 
 
         // sets button listeners
@@ -204,8 +210,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             @Override
             public void onClick(View v) {
                 // begins the thread to commence information transferring process
-                /*if (btAssistiveMode.isChecked()) bt.start();
-                else bt.cancel();*/
+                if (btAssistiveMode.isChecked()) bt.start();
+                else bt.cancel();
 
                 if (btAssistiveMode.isChecked())
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
@@ -229,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     // bt.start();
                 }
 
-                /*if (!btS.isChecked()) bt.start();
+                /*if (!bt.isChecked()) bt.start();
                 else bt.cancel();*/
             }
         });
@@ -272,7 +278,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             @Override
             public void onClick(View v) {
                 Toast.makeText(getApplicationContext(), "Will display settings!", Toast.LENGTH_SHORT).show();
+
+                try {
+                    out.write(ByteBuffer.allocate(4).putFloat(5.1f).array());
+                } catch (IOException e) {
+                    Log.d("oh no", "run: oh no!" + e);
+                }
             }
+
         });
 
         ivLuggage.setOnClickListener(new View.OnClickListener() {
@@ -284,7 +297,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         });
 
         // handles Location API setup
-        lMan = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
+
+        // test
+
+        startLocationUpdates();
+
+
+
+
+
+        /*lMan = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
 
         mFusedProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -328,14 +350,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             newLoc.setLatitude(GPSLoc.getLatitude());
             newLoc.setLongitude(GPSLoc.getLongitude());
         }
-
+*/
         // begins the speed calculation
         beginSpeedCalculation();
     }
 
     // callback function used by the FusedLocationProviderClient API
     // each time it can, updates the locates -> every x seconds, polled by the thread and used to update speed
-    LocationCallback mLocationCallback = new LocationCallback() {
+   /* LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             List<Location> locationList = locationResult.getLocations();
@@ -349,7 +371,51 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             lastLoc = newLoc;
             newLoc = location;
         }
-    };
+    }; */
+
+   /* @Override
+    public void onConnected(Bundle bundle) {
+        Log.d("TAG", "onConnected - isConnected ...............: " + mGoogleApiClient.isConnected());
+        startLocationUpdates();
+    } */
+
+    public void startLocationUpdates() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setInterval(POLLING_FREQ_MILLISECONDS);
+        mLocationRequest.setFastestInterval(POLLING_FREQ_MILLISECONDS);
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+        try {
+            LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+                        @Override
+                        public void onLocationResult(LocationResult locationResult) {
+                            // do work here
+                            onLocationChanged(locationResult.getLastLocation());
+                        }
+                    },
+                    Looper.myLooper());
+        } catch (SecurityException e) {
+            Log.d("TAG", "startLocationUpdates: Didn't start :(");
+        }
+
+    }
+
+   /* @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.d("TAG", "Connection failed: " + connectionResult.toString());
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    } */
 
     // callback methods necessary for interface necessary for initial location tracking
     @Override
@@ -365,6 +431,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     @Override
     public void onLocationChanged(Location loc) {
      Log.d("TAG", "onLocationChanged: " + loc);
+     lastLoc = newLoc;
+     newLoc = loc;
+
     }
 
     @Override
