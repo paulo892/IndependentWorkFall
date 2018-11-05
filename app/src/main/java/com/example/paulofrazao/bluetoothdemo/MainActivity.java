@@ -127,8 +127,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     static final int SECONDS_IN_HOUR = 3600;
     static final float METERS_IN_MILE = 1609.344f;
 
-    private GoogleApiClient googleApiClient;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // sets splash screen and then home screen
@@ -204,6 +202,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         // establishes connection
         final BluetoothConnection bt = new BluetoothConnection(dev);
 
+        // sets text to bag's name
+        tvConnectedDeviceName.setText(dev.getName());
+
 
         // sets button listeners
         btAssistiveMode.setOnClickListener(new View.OnClickListener() {
@@ -224,19 +225,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             @Override
             public void onClick(View v) {
                 if (btEscalator.isChecked()) btEscalator.setChecked(false);
-                if (btSidewalk.isChecked()) btSidewalk.setChecked(false);
+                if (btSidewalk.isChecked()) {
+                    btSidewalk.setChecked(false);
+                    onMovingSidewalk = false;
+                }
 
                 if (btStairs.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for stairs!", Toast.LENGTH_SHORT).show();
-                    //bt.cancel();
+                    bt.cancel();
                 }
                 else {
                     Toast.makeText(getApplicationContext(), "Not ready for stairs :(", Toast.LENGTH_SHORT).show();
-                    // bt.start();
+                    bt.start();
                 }
-
-                /*if (!bt.isChecked()) bt.start();
-                else bt.cancel();*/
             }
         });
 
@@ -244,15 +245,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             @Override
             public void onClick(View v) {
                 if (btStairs.isChecked()) btStairs.setChecked(false);
-                if (btSidewalk.isChecked()) btSidewalk.setChecked(false);
+                if (btSidewalk.isChecked()) {
+                    btSidewalk.setChecked(false);
+                    onMovingSidewalk = false;
+                }
 
                 if (btEscalator.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for an escalator!", Toast.LENGTH_SHORT).show();
-                    //bt.cancel();
+                    bt.cancel();
                 }
                 else {
                     Toast.makeText(getApplicationContext(), "Not ready for an escalator :(", Toast.LENGTH_SHORT).show();
-                    // bt.start();
+                    bt.start();
                 }
             }
         });
@@ -430,7 +434,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
     @Override
     public void onLocationChanged(Location loc) {
-     Log.d("TAG", "onLocationChanged: " + loc);
+     Log.d("TAG", "onLocationChanged: " + loc + loc.getAccuracy());
      lastLoc = newLoc;
      newLoc = loc;
 
@@ -618,7 +622,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         public void cancel() {
             try {
                 mmSocket.close();
-                executorService2.shutdown();
+                if (executorService2 != null) executorService2.shutdownNow();
             } catch (IOException e) {
                 e.printStackTrace();
             }
