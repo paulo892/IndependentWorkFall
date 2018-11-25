@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
         // handles the bluetooth setup
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-     /*   Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
 
         // if bluetooth is not enabled, enables it
         if(!mBluetoothAdapter.isEnabled()) {
@@ -210,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         final BluetoothConnection bt = new BluetoothConnection(dev);
 
         // sets text to bag's name
-        tvConnectedDeviceName.setText(dev.getName()); */
+        tvConnectedDeviceName.setText(dev.getName());
 
         // sets button listeners
         btAssistiveMode.setOnClickListener(new View.OnClickListener() {
@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             public void onClick(View v) {
 
                 if (btAssistiveMode.isChecked()) {
-                //    bt.start();
+                    bt.start();
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
                 }
                 else {
@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     } catch (IOException e) {
                         Log.d("ERR", "run: didn't stop reading input");
                     }
-                 //   bt.cancel();
+                    bt.cancel();
                 }
             }
         });
@@ -317,7 +317,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             byte[] image = Base64.decode(encoded.getBytes(), Base64.DEFAULT);
             ivLuggage.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.length));
         }
-        
+
         ivLuggage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -344,7 +344,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     } catch (IOException e) {
                         Log.d("ERR", "run: didn't stop reading input");
                     }
-                //    bt.cancel();
+                    bt.cancel();
                 }
             }
         });
