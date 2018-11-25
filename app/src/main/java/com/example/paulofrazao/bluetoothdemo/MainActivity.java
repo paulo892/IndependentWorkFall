@@ -1,17 +1,23 @@
 package com.example.paulofrazao.bluetoothdemo;
 
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 
 import android.bluetooth.BluetoothSocket;
 
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -22,6 +28,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
@@ -51,6 +58,7 @@ import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.SettingsClient;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -64,14 +72,22 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements LocationListener{
 
+    // frequency of transmission
+    private final int POLLING_FREQ_MILLISECONDS = 1000;
+
+    // helpful constants
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+    static final int SECONDS_IN_HOUR = 3600;
+    static final float METERS_IN_MILE = 1609.344f;
+
     // input/output streams
-    private InputStream in;
     private OutputStream out;
 
     // components
@@ -98,34 +114,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     private double runningSum = 0.0;
     private int runningCount = 0;
 
-    // variable for Location API speed calculations
-    private FusedLocationProviderClient mFusedProviderClient;
+    // variables for Location API speed calculations
     private LocationRequest mLocationRequest;
-    private LocationManager lMan;
-    private Location netLoc;
-    private Location GPSLoc;
     private Location lastLoc;
     private Location newLoc;
 
+    // holds the current speed of the bag
     private float curSpeed;
 
+    // executor services to execute speed calcs and transmissions
     private ScheduledExecutorService executorService;
     private ScheduledExecutorService executorService2;
 
+    // indicator of whether on moving sidewalk
     private boolean onMovingSidewalk = false;
 
-    private final int POLLING_FREQ_MILLISECONDS = 1000;
-
-    private GoogleApiClient mGoogleApiClient;
-
+    // builder for proximity alert dialog
+    private AlertDialog.Builder builder;
 
     // bluetooth connection elements
+    private BluetoothDevice dev;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket btSocket;
 
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-    static final int SECONDS_IN_HOUR = 3600;
-    static final float METERS_IN_MILE = 1609.344f;
+    // temporary array used for speed generation
+    private float[] nums = new float[3];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -166,7 +179,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         btAssistiveMode.setHeight((int)(height*0.075));
         tvConnectedDevice.setHeight((int)(height*0.075));
         tvConnectedDeviceName.setHeight((int)(height*0.075));
-       // llMetrics.getLayoutParams().height = (int) (height * 0.45);
         tvMetrics.setHeight((int)(height * 0.05));
         tvSpeedHeader.setHeight((int)(height * 0.075));
         tvSpeedData.setHeight((int)(height * 0.1));
@@ -179,16 +191,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         btEscalator.setHeight((int)(height*0.05));
         btSidewalk.setHeight((int)(height*0.05));
         btSettings.setHeight((int)(height*0.075));
-
-
-        /* Here, we check the paired devices against the MAC address of the Arduino to display
-           the device name in the corresponding TextView. In the final product, should have way to
-           differentiate luggage from other devices. */
-
+        // llMetrics.getLayoutParams().height = (int) (height * 0.45);
 
         // handles the bluetooth setup
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+     /*   Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
 
         // if bluetooth is not enabled, enables it
         if(!mBluetoothAdapter.isEnabled()) {
@@ -196,28 +203,33 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             startActivityForResult(enableIntent, 3); }
 
         // checks to make sure device is found
-        BluetoothDevice dev = (BluetoothDevice) devices.toArray()[0];
+        dev = (BluetoothDevice) devices.toArray()[0];
         Log.d("tag", "onCreate: " + dev.getName());
 
         // establishes connection
         final BluetoothConnection bt = new BluetoothConnection(dev);
 
         // sets text to bag's name
-        tvConnectedDeviceName.setText(dev.getName());
-
+        tvConnectedDeviceName.setText(dev.getName()); */
 
         // sets button listeners
         btAssistiveMode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // begins the thread to commence information transferring process
-                if (btAssistiveMode.isChecked()) bt.start();
-                else bt.cancel();
 
-                if (btAssistiveMode.isChecked())
+                if (btAssistiveMode.isChecked()) {
+                //    bt.start();
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
-                else
+                }
+                else {
                     Toast.makeText(getApplicationContext(), "Assistive Mode is OFF!", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-3f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop reading input");
+                    }
+                 //   bt.cancel();
+                }
             }
         });
 
@@ -230,13 +242,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     onMovingSidewalk = false;
                 }
 
-                if (btStairs.isChecked()) {
+                if (btStairs.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for stairs!", Toast.LENGTH_SHORT).show();
-                    bt.cancel();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-1f).array());
+                        Log.d("WRR", "onClick: wrote stop" + out);
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop bag");
+                    }
                 }
-                else {
+                else if (!btStairs.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Not ready for stairs :(", Toast.LENGTH_SHORT).show();
-                    bt.start();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-2f).array());
+                        Log.d("WRR", "onClick: wrote start" + out);
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't start bag");
+                    }
                 }
             }
         });
@@ -250,13 +272,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     onMovingSidewalk = false;
                 }
 
-                if (btEscalator.isChecked()) {
+                if (btEscalator.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Ready for an escalator!", Toast.LENGTH_SHORT).show();
-                    bt.cancel();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-1f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop bag");
+                    }
                 }
-                else {
+                else if (!btEscalator.isChecked() && btAssistiveMode.isChecked()) {
                     Toast.makeText(getApplicationContext(), "Not ready for an escalator :(", Toast.LENGTH_SHORT).show();
-                    bt.start();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-2f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't start bag");
+                    }
                 }
             }
         });
@@ -275,23 +305,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     Toast.makeText(getApplicationContext(), "Not ready for a moving sidewalk :(", Toast.LENGTH_SHORT).show();
                     onMovingSidewalk = false;
                 }
+
             }
         });
 
-        btSettings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "Will display settings!", Toast.LENGTH_SHORT).show();
+        // updates photo
+        SharedPreferences prefs = this.getPreferences(Context.MODE_PRIVATE);
+        String encoded = prefs.getString("luggage_image", "bananas");
 
-                try {
-                    out.write(ByteBuffer.allocate(4).putFloat(5.1f).array());
-                } catch (IOException e) {
-                    Log.d("oh no", "run: oh no!" + e);
-                }
-            }
-
-        });
-
+        if (!encoded.equals("bananas")) {
+            byte[] image = Base64.decode(encoded.getBytes(), Base64.DEFAULT);
+            ivLuggage.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.length));
+        }
+        
         ivLuggage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -300,89 +326,49 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             }
         });
 
-        // handles Location API setup
+        // initializes the proximity sensor's alert button
+        builder = new AlertDialog.Builder(MainActivity.this);
 
-        // test
+        builder.setCancelable(false);
+        builder.setTitle("You're getting too far from the bag!");
+        builder.setMessage("Turning off Assistive Mode.");
 
+        builder.setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (btAssistiveMode.isChecked()) {
+                    btAssistiveMode.setChecked(false);
+                    Toast.makeText(getApplicationContext(), "Assistive Mode is OFF!", Toast.LENGTH_SHORT).show();
+                    try {
+                        out.write(ByteBuffer.allocate(4).putFloat(-3f).array());
+                    } catch (IOException e) {
+                        Log.d("ERR", "run: didn't stop reading input");
+                    }
+                //    bt.cancel();
+                }
+            }
+        });
+
+        // begins location updates
         startLocationUpdates();
 
-
-
-
-
-        /*lMan = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
-
-        mFusedProviderClient = LocationServices.getFusedLocationProviderClient(this);
-
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(POLLING_FREQ_MILLISECONDS);
-        mLocationRequest.setFastestInterval(POLLING_FREQ_MILLISECONDS);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        try {
-            mFusedProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
-        } catch (SecurityException e) {
-            Log.d("TAG", "onCreate: NOPE");
-        }
-
-
-        // ensures that fine location can be accessed
-        if (getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        }
-
-        if (getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("TAG", "onCreate: Was not able to get permissions :(");
-        }
-
-        if(lMan != null) {
-            // lMan.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 0, this);
-            lMan.requestSingleUpdate(LocationManager.GPS_PROVIDER, this, null);
-            GPSLoc = lMan.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            Log.d("Maybe?", "onCreate: " + GPSLoc);
-        }
-
-        if (GPSLoc == null) {
-            Log.d("ODD", "onCreate: Shouldn't happen");
-        }
-        else {
-            lastLoc = new Location("");
-            lastLoc.setLatitude(GPSLoc.getLatitude());
-            lastLoc.setLongitude(GPSLoc.getLongitude());
-
-            newLoc = new Location("");
-            newLoc.setLatitude(GPSLoc.getLatitude());
-            newLoc.setLongitude(GPSLoc.getLongitude());
-        }
-*/
         // begins the speed calculation
         beginSpeedCalculation();
     }
 
-    // callback function used by the FusedLocationProviderClient API
-    // each time it can, updates the locates -> every x seconds, polled by the thread and used to update speed
-   /* LocationCallback mLocationCallback = new LocationCallback() {
+    /*
+    private final BroadcastReceiver rec = new BroadcastReceiver() {
         @Override
-        public void onLocationResult(LocationResult locationResult) {
-            List<Location> locationList = locationResult.getLocations();
-            Location location = null;
-            if (locationList.size() > 0) {
-                //The last location in the list is the newest
-                location = locationList.get(locationList.size() - 1);
-                Log.d("TEMP", "Location: " + location.getLatitude() + " " + location.getLongitude());
+        public void onReceive(Context context, Intent intent) {
+            String act = intent.getAction();
+            if (BluetoothDevice.ACTION_FOUND.equals(act)) {
+                int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                Log.d("RSSI", "RSSI: " + rssi);
             }
-
-            lastLoc = newLoc;
-            newLoc = location;
         }
     }; */
 
-   /* @Override
-    public void onConnected(Bundle bundle) {
-        Log.d("TAG", "onConnected - isConnected ...............: " + mGoogleApiClient.isConnected());
-        startLocationUpdates();
-    } */
-
+    // starts location updates
     public void startLocationUpdates() {
         mLocationRequest = new LocationRequest();
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -397,10 +383,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         settingsClient.checkLocationSettings(locationSettingsRequest);
 
         try {
-            LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest, new LocationCallback() {
+            // establishes location change callback function
+            LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(mLocationRequest,
+                    new LocationCallback() {
                         @Override
                         public void onLocationResult(LocationResult locationResult) {
-                            // do work here
                             onLocationChanged(locationResult.getLastLocation());
                         }
                     },
@@ -410,16 +397,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         }
 
     }
-
-   /* @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        Log.d("TAG", "Connection failed: " + connectionResult.toString());
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    } */
 
     // callback methods necessary for interface necessary for initial location tracking
     @Override
@@ -433,33 +410,32 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     }
 
     @Override
-    public void onLocationChanged(Location loc) {
-     Log.d("TAG", "onLocationChanged: " + loc + loc.getAccuracy());
-     lastLoc = newLoc;
-     newLoc = loc;
-
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        //   Log.d("TAG", "onStatusChanged: " +status);
     }
 
     @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-     //   Log.d("TAG", "onStatusChanged: " +status);
+    public void onLocationChanged(Location loc) {
+     Log.d("TAG", "onLocationChanged: " + loc + loc.getAccuracy());
+
+     // updates the last location and new location for speed calculations
+     if (lastLoc == null && newLoc == null) {lastLoc = loc; newLoc = loc;}
+     else {lastLoc = newLoc; newLoc = loc;}
     }
 
+    // starts speed calculations
     private void beginSpeedCalculation() {
         executorService = Executors.newSingleThreadScheduledExecutor();
-     //   final Random rnd = new Random();
         executorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 try {
-              //      float nxt = rnd.nextFloat();
-                    // float speed = 20 * nxt;
+                    // testing of RSSI fidelity
+                    Log.d("RSSI", "RSSI: " + dev.EXTRA_RSSI);
+
                     float speed = getRecentSpeed();
-                    Log.d("SPEED", "established: " + speed);
-                    Log.d("SPEED", "new: " + (newLoc.getSpeed() * SECONDS_IN_HOUR / METERS_IN_MILE));
                     float roundedSpeed = speed * 1000;
 
-                    // float roundedSpeed = speed * 1000;
                     roundedSpeed = (float) ((int) roundedSpeed);
                     roundedSpeed /= 1000;
                     final float tempRoundedSpeed = roundedSpeed;
@@ -467,7 +443,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     // assumes that a moving sidewalk moves at 1.4 mph!
                     if (onMovingSidewalk) {
                         curSpeed = Math.max(tempRoundedSpeed - 1.4f, 0f);
-                        runningSum += curSpeed - 1.4;
+                        runningSum += curSpeed;
                         Log.d("MOVS", "speed: " + curSpeed);
                     }
                     else {
@@ -492,18 +468,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                         }
                     });
                 } catch (Exception e) {
-                    Log.d("oh no", "run: oh no!" + e);
+                    // Log.d("oh no", "run: oh no!" + e);
                 }
 
             }
         }, 0, POLLING_FREQ_MILLISECONDS, TimeUnit.MILLISECONDS);
     }
 
+    // gets the most recent speed (through calculations)
     float getRecentSpeed() {
         // calculates distance b/w new point and old point
         float[] res = new float[1];
-        Location.distanceBetween(lastLoc.getLatitude(), lastLoc.getLongitude(), this.newLoc.getLatitude(), this.newLoc.getLongitude(), res);
-
+        try {
+            Location.distanceBetween(lastLoc.getLatitude(), lastLoc.getLongitude(), this.newLoc.getLatitude(), this.newLoc.getLongitude(), res);
+        } catch (Exception e) {
+            Log.d("EXC", "getRecentSpeed: " + e);
+        }
 
         // converts meters / second to miles / hour
         float speedMetersPerHour = res[0] * SECONDS_IN_HOUR;
@@ -520,21 +500,41 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
     }
 
     // handles the picture-taking process
-    /* Need to figure out how to make the picture persist */
     private void dispatchTakePictureIntent() {
         Intent takePicIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePicIntent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(takePicIntent, REQUEST_IMAGE_CAPTURE);
-
         }
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            // retrieves the photo
+            Bitmap imageBitmap = (Bitmap) data.getExtras().get("data");
+
+            // sets the photo
             ivLuggage.setImageBitmap(imageBitmap);
+
+            // logs the photo for later use
+            SharedPreferences prefs = this.getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+
+            // note: must convert bitmap to Base64 String to store it
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            byte[] arr = stream.toByteArray();
+
+            String encodedStr = Base64.encodeToString(arr, Base64.DEFAULT);
+
+            editor.putString("luggage_image", encodedStr);
+            editor.apply();
         }
+    }
+
+    public void launchSettings(View view) {
+        Intent intent = new Intent(this, SettingsActivity.class);
+
+        startActivity(intent);
     }
 
     private class BluetoothConnection extends Thread {
@@ -546,7 +546,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 .fromString("00001101-0000-1000-8000-00805f9b34fb");
 
         public BluetoothConnection(BluetoothDevice device) {
-
             BluetoothSocket tmp = null;
 
             // Get a BluetoothSocket for a connection with the given BluetoothDevice
@@ -557,7 +556,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 e.printStackTrace();
             }
 
+            // set socket equal to created socket
             mmSocket = tmp;
+            Log.d("SOCK", "BluetoothConnection: " + mmSocket);
         }
 
         public void run() {
@@ -571,58 +572,51 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                 Log.d("ERR", "run: Socket couldn't connect");
             }
 
+            // weird necessary step
             btSocket = mmSocket;
 
             // establishes output stream
             try {
-                out = btSocket.getOutputStream();}
+                out = mmSocket.getOutputStream();
+                try {
+                      /*  latch = new CountDownLatch(1);
+                        latch.await(); */
+                    out.write(ByteBuffer.allocate(4).putFloat(-4f).array());
+                } catch (Exception e) {
+                    Log.d("ERR", "run: didn't start reading input");
+                }
+             //   latch.countDown();
+            }
             catch (Exception e) {
                 Log.d("tag", "onCreate: couldn't out");
             }
 
-            // establishes input stream
-            try {
-                in = btSocket.getInputStream();}
-            catch (Exception e) {
-                Log.d("tag", "onCreate: couldn't in");
-            }
+            nums[0] = 2; nums[1] = 3; nums[2] = 4;
 
+            // schedules writing thread
             executorService2 = Executors.newSingleThreadScheduledExecutor();
-            //   final Random rnd = new Random();
             executorService2.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        out.write(ByteBuffer.allocate(4).putFloat(curSpeed).array());
+                        float word = nums[new Random().nextInt(nums.length)];
+                        Log.d("SPD", "run: " + word);
+                        out.write(ByteBuffer.allocate(4).putFloat(word).array());
+                        //out.write(ByteBuffer.allocate(4).putFloat(curSpeed).array());
                     } catch (IOException e) {
                         Log.d("oh no", "run: oh no!" + e);
                     }
                 }
             },  0, POLLING_FREQ_MILLISECONDS, TimeUnit.MILLISECONDS);
+            Log.d("CUR", "run: ");
         }
-/*
-        public void write(byte[] buffer) {
-        //    while (true) {
-                try {
-                    //write the data to socket stream
-                    ByteBuffer b = ByteBuffer.allocate(8);
-                    b.putDouble(5);
-                    byte[] arr = b.array();
-                    for (int i = 0; i < 8; i++) Log.d("TAG", "write: " + arr[i]);
-                    out.write(arr);
-                    Log.d("TAG", "write: " + buffer.toString());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Log.d("TAG", "write: OHNO");
-                }
-        //    }
-        } */
 
         // stops the thread
         public void cancel() {
             try {
                 mmSocket.close();
                 if (executorService2 != null) executorService2.shutdownNow();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
