@@ -18,11 +18,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_column="0"
-            android:layout_gravity="center_vertical|center_horizontal"
+            android:textColor="#FFFFFF"
 
+            android:layout_gravity="center_vertical|center_horizontal"
             android:layout_weight="1"
+
             android:gravity="center_vertical|center_horizontal"
-            android:text="Assistive Mode:" />
+            android:text="Assistive Mode:"
+            android:textSize="20dp" />
 
         <ToggleButton
             android:id="@+id/btAssistiveMode"
@@ -31,6 +34,7 @@
             android:layout_column="1"
             android:layout_gravity="center_horizontal|center"
             android:layout_weight="1"
+            android:background="@drawable/button_border"
             android:text="ToggleButton" />
 
 
@@ -47,21 +51,27 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_column="0"
-            android:layout_gravity="center_vertical|center_horizontal"
+            android:textColor="#FFFFFF"
 
+            android:layout_gravity="center_vertical|center_horizontal"
             android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:text="Connected Device:" />
+
+            android:gravity="center_vertical|center_horizontal"
+            android:text="Connected Device:"
+            android:textSize="20dp" />
 
         <TextView
             android:id="@+id/tvConnectedDeviceName"
             android:layout_width="0dp"
+            android:textColor="#FFFFFF"
+
             android:layout_height="wrap_content"
             android:layout_column="0"
             android:layout_gravity="center_vertical|center_horizontal"
-
             android:layout_weight="1"
-            android:gravity="center_horizontal"
+            android:textSize="16dp"
+
+            android:gravity="center_vertical|center_horizontal"
             android:text="None yet!" />
 
 
@@ -77,15 +87,19 @@
             android:id="@+id/ivLuggage"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginRight="5dp"
             android:layout_weight="1"
             android:adjustViewBounds="true"
             android:scaleType="centerCrop"
+
+
             android:src="@drawable/luggage_marvel" />
 
         <LinearLayout
             android:id="@+id/llMetrics"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -93,10 +107,18 @@
                 android:id="@+id/tvMetrics"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-
                 android:layout_gravity="center"
-                android:text="Metrics"
-                android:textSize="20sp" />
+                android:background="@drawable/rounded_corner"
+
+
+                android:paddingBottom="2dp"
+                android:paddingLeft="25dp"
+                android:paddingRight="25dp"
+                android:paddingTop="2dp"
+                android:text="@string/metrics"
+                android:textColor="#FFFFFF"
+                android:textSize="20dp" />
+
 
             <TextView
                 android:id="@+id/tvSpeedHeader"
@@ -104,7 +126,10 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal|center"
                 android:gravity="center"
-                android:text="Current Speed:" />
+                android:text="Current Speed:"
+                android:textColor="#FFFFFF"
+
+                android:textSize="16dp" />
 
             <TextView
                 android:id="@+id/tvSpeedData"
@@ -112,8 +137,11 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal|center"
                 android:adjustViewBounds="true"
+                android:textColor="#FFFFFF"
+
                 android:gravity="center_vertical|center"
-                android:text="0 MPH" />
+                android:text="0 MPH"
+                android:textSize="20dp" />
 
             <TextView
                 android:id="@+id/tvAvgSpeedHeader"
@@ -121,7 +149,10 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal|center"
                 android:gravity="center_vertical|center"
-                android:text="Average Speed:" />
+                android:textColor="#FFFFFF"
+
+                android:text="Average Speed:"
+                android:textSize="16dp" />
 
             <TextView
                 android:id="@+id/tvAvgSpeedData"
@@ -129,8 +160,11 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal|center"
                 android:adjustViewBounds="true"
+                android:textColor="#FFFFFF"
+
                 android:gravity="center_vertical|center"
-                android:text="0 MPH" />
+                android:text="0 MPH"
+                android:textSize="20dp" />
         </LinearLayout>
 
 
@@ -144,29 +178,43 @@
         <TextView
             android:id="@+id/tvStairs"
             android:layout_width="0dp"
+            android:background="@drawable/rounded_corner"
             android:layout_height="match_parent"
             android:layout_column="0"
             android:layout_gravity="center_horizontal|center"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:layout_weight="1"
             android:gravity="center_vertical|center_horizontal"
+            android:textColor="#FFFFFF"
             android:text="Stairs" />
 
         <TextView
             android:id="@+id/tvEscalator"
+            android:textColor="#FFFFFF"
+
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:background="@drawable/rounded_corner"
             android:layout_column="1"
             android:layout_gravity="center_horizontal|center"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:layout_weight="1"
             android:gravity="center_vertical|center_horizontal"
             android:text="Escalator" />
 
         <TextView
             android:id="@+id/tvSidewalk"
+            android:textColor="#FFFFFF"
+
             android:layout_width="0dp"
+            android:background="@drawable/rounded_corner"
             android:layout_height="match_parent"
             android:layout_column="2"
             android:layout_gravity="center_horizontal|center"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:layout_weight="1"
             android:gravity="center_vertical|center_horizontal"
             android:text="Mov. Sidewalk" />
@@ -184,7 +232,10 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_column="0"
+            android:background="@drawable/button_border"
+
             android:layout_gravity="center_horizontal"
+            android:layout_marginLeft="20dp"
             android:layout_weight="1"
             android:text="ToggleButton" />
 
@@ -193,17 +244,24 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_column="1"
+            android:background="@drawable/button_border"
+
             android:layout_gravity="center_horizontal"
+            android:layout_marginLeft="30dp"
+            android:layout_marginRight="30dp"
             android:layout_weight="1"
             android:text="ToggleButton" />
 
         <ToggleButton
             android:id="@+id/btSidewalk"
             android:layout_width="0dp"
-
             android:layout_height="match_parent"
+
+            android:background="@drawable/button_border"
+
             android:layout_column="2"
             android:layout_gravity="center_horizontal"
+            android:layout_marginRight="20dp"
             android:layout_weight="1"
             android:text="ToggleButton" />
         <!--  android:layout_columnWeight="1"
@@ -221,11 +279,15 @@
             android:id="@+id/btSettings"
             android:layout_width="0dip"
             android:layout_height="match_parent"
-            android:layout_gravity="center_horizontal"
+            android:layout_gravity="center_horizontal|center"
 
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
             android:layout_weight="1"
-            android:text="Settings"
-            android:onClick="launchSettings"/>/>
+
+            android:background="@drawable/button_border"
+            android:onClick="launchSettings"
+            android:text="Settings" />
     </TableRow>
 
 

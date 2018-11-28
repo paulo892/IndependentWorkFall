@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         btSidewalk.setHeight((int)(height*0.05));
         btSettings.setHeight((int)(height*0.075));
         // llMetrics.getLayoutParams().height = (int) (height * 0.45);
-
+/*
         // handles the bluetooth setup
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
@@ -210,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         final BluetoothConnection bt = new BluetoothConnection(dev);
 
         // sets text to bag's name
-        tvConnectedDeviceName.setText(dev.getName());
+        tvConnectedDeviceName.setText(dev.getName()); */
 
         // sets button listeners
         btAssistiveMode.setOnClickListener(new View.OnClickListener() {
@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             public void onClick(View v) {
 
                 if (btAssistiveMode.isChecked()) {
-                    bt.start();
+                    //bt.start();
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
                 }
                 else {
@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     } catch (IOException e) {
                         Log.d("ERR", "run: didn't stop reading input");
                     }
-                    bt.cancel();
+                    //bt.cancel();
                 }
             }
         });
@@ -344,7 +344,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     } catch (IOException e) {
                         Log.d("ERR", "run: didn't stop reading input");
                     }
-                    bt.cancel();
+                    //bt.cancel();
                 }
             }
         });
