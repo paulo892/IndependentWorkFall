@@ -146,9 +146,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
         // swapped the two!
         setTheme(R.style.AppTheme);
+        try {TimeUnit.SECONDS.sleep(2);}
+            catch (Exception e) {
+                Log.d("TAG", "onCreate: " + e);}
         super.onCreate(savedInstanceState);
 
         setTheme(R.style.AppTheme_Launcher);
+
         setContentView(R.layout.activity_main);
 
         // initializes components
@@ -218,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
             public void onClick(View v) {
 
                 if (btAssistiveMode.isChecked()) {
-                    //bt.start();
+                 //   bt.start();
                     Toast.makeText(getApplicationContext(), "Assistive Mode is ON!", Toast.LENGTH_SHORT).show();
                 }
                 else {
@@ -228,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     } catch (IOException e) {
                         Log.d("ERR", "run: didn't stop reading input");
                     }
-                    //bt.cancel();
+                //    bt.cancel();
                 }
             }
         });
@@ -344,7 +348,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     } catch (IOException e) {
                         Log.d("ERR", "run: didn't stop reading input");
                     }
-                    //bt.cancel();
+                //    bt.cancel();
                 }
             }
         });
