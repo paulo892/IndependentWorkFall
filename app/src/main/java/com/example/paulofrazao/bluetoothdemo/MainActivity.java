@@ -146,9 +146,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
         // swapped the two!
         setTheme(R.style.AppTheme);
-        try {TimeUnit.SECONDS.sleep(2);}
+     /*   try {TimeUnit.SECONDS.sleep(2);}
             catch (Exception e) {
-                Log.d("TAG", "onCreate: " + e);}
+                Log.d("TAG", "onCreate: " + e);} */
         super.onCreate(savedInstanceState);
 
         setTheme(R.style.AppTheme_Launcher);
