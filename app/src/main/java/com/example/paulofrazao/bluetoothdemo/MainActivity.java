@@ -146,9 +146,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
 
         // swapped the two!
         setTheme(R.style.AppTheme);
+     /*   try {TimeUnit.SECONDS.sleep(2);}
+            catch (Exception e) {
+                Log.d("TAG", "onCreate: " + e);} */
         super.onCreate(savedInstanceState);
 
         setTheme(R.style.AppTheme_Launcher);
+
         setContentView(R.layout.activity_main);
 
         // initializes components
@@ -196,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
         // handles the bluetooth setup
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+        Log.d("DEV", devices.toString());
 
         // if bluetooth is not enabled, enables it
         if(!mBluetoothAdapter.isEnabled()) {
@@ -462,7 +467,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                         @Override
                         public void run() {
 
-                            tvSpeedData.setText(Float.toString(tempRoundedSpeed));
+                          //  tvSpeedData.setText(Float.toString(tempRoundedSpeed));
                             tvAvgSpeedData.setText(Float.toString(tempAvg));
 
                         }
@@ -601,13 +606,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener{
                     try {
                         float word = nums[new Random().nextInt(nums.length)];
                         Log.d("SPD", "run: " + word);
-                        out.write(ByteBuffer.allocate(4).putFloat(word).array());
-                        //out.write(ByteBuffer.allocate(4).putFloat(curSpeed).array());
-                    } catch (IOException e) {
+                        out.write(ByteBuffer.allocate(4).putFloat(curSpeed).array());
+                        for (int i = 0; i < 4; i++) {
+                            Log.d(i + "", "run: " + ByteBuffer.allocate(4).putFloat(curSpeed).array()[i]);
+                        }
+                        runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+
+                                tvSpeedData.setText(Float.toString(curSpeed));
+
+                            }
+                        });
+                    } catch (Exception e) {
                         Log.d("oh no", "run: oh no!" + e);
                     }
                 }
-            },  0, POLLING_FREQ_MILLISECONDS, TimeUnit.MILLISECONDS);
+            },  0, 4000, TimeUnit.MILLISECONDS);
             Log.d("CUR", "run: ");
         }
 
